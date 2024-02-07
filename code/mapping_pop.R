@@ -26,38 +26,38 @@ pop_zim     <- mask(pop_zim_shp, zim_shp)
 pop_mlw_spdf <- as(pop_mlw, "SpatialPixelsDataFrame")
 mlw_df <- as.data.frame(pop_mlw_spdf)
 colnames(mlw_df) <- c("value", "x", "y")
-sum(mlw_df$value) # 111,856
+sum(mlw_df$value) # 15,691,678
 
 # Zambia
 pop_zam_spdf <- as(pop_zam, "SpatialPixelsDataFrame")
 zam_df <- as.data.frame(pop_zam_spdf)
 colnames(zam_df) <- c("value", "x", "y")
-sum(zam_df$value) # 111,856
+sum(zam_df$value) # 16,051,571
 
 # Zimbabwe
-pop_zim_spdf <- as(pop_mlw, "SpatialPixelsDataFrame")
+pop_zim_spdf <- as(pop_zim, "SpatialPixelsDataFrame")
 zim_df <- as.data.frame(pop_zim_spdf)
 colnames(zim_df) <- c("value", "x", "y")
-sum(zim_df$value) # 111,856
+sum(zim_df$value) # 13,521,963
 
 # plotting ----
 # Malawi
 ggplot()  +
-    geom_sf(data = blantyre) +
-    geom_tile(data = u5_blan_df[u5_blan_df$value>0,], aes(x=x, y=y, fill=value), alpha=0.6) +
-    scale_fill_viridis() +
-    geom_sf(data = dat, alpha = 0.1, lwd = 0.5)
+    geom_sf(data = mlw_shp) +
+    geom_tile(data = mlw_df[mlw_df$value>0,], 
+              aes(x=x, y=y, fill=log(value)), alpha=0.6) +
+    scale_fill_viridis() 
 
 # Zambia
 ggplot()  +
-    geom_sf(data = blantyre) +
-    geom_tile(data = u5_blan_df[u5_blan_df$value>0,], aes(x=x, y=y, fill=value), alpha=0.6) +
-    scale_fill_viridis() +
-    geom_sf(data = dat, alpha = 0.1, lwd = 0.5)
+    geom_sf(data = zam_shp) +
+    geom_tile(data = zam_df[zam_df$value>0,], 
+              aes(x=x, y=y, fill=log(value)), alpha=0.6) +
+    scale_fill_viridis() 
 
 # Zimbabwe
 ggplot()  +
-geom_sf(data = blantyre) +
-    geom_tile(data = u5_blan_df[u5_blan_df$value>0,], aes(x=x, y=y, fill=value), alpha=0.6) +
-    scale_fill_viridis() +
-    geom_sf(data = dat, alpha = 0.1, lwd = 0.5)
+    geom_sf(data = zim_shp) +
+    geom_tile(data = zim_df[zim_df$value>0,], 
+              aes(x=x, y=y, fill=log(value)), alpha=0.6) +
+    scale_fill_viridis() 
