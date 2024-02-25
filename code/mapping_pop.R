@@ -61,3 +61,10 @@ ggplot()  +
     geom_tile(data = zim_df[zim_df$value>0,], 
               aes(x=x, y=y, fill=log(value)), alpha=0.6) +
     scale_fill_viridis() 
+
+# map all
+ggplot()  +
+    geom_sf(data = zam_shp) +
+    geom_sf(data = zim_shp) +
+    geom_sf(data = mlw_shp) 
+    

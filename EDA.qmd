@@ -1,0 +1,257 @@
+---
+title: "Sampling density of PHIA surveys per polygon"
+format: html
+editor: visual
+---
+
+## Zimbabwe
+
+Import the data
+
+```{r}
+#| echo: false
+pacman::p_load(rio, tidyverse,sp, sf, raster, ggmap, 
+               here, janitor, viridis, terra, tmap)
+
+zim_centroids  <- import(here("data", "raw", "PHIA data", 
+                              "Zimbabwe", "zimphia2015centroids.csv")) #centroidid
+attr(zim_centroids, 'spec') <- NULL 
+
+zim_hh <- import(here("data", "raw", "PHIA data", 
+                      "Zimbabwe", "zimphia2015hh.csv"))
+zim_hh$centroidid <- str_squish(zim_hh$centroidid)
+attr(zim_hh, 'spec') <- NULL 
+
+zim_shp <- st_read(here("data", "raw", "shapefiles", 
+                        "Zimbabwe","zwe_admbnda_adm2_zimstat_ocha_20180911", 
+                        "zwe_admbnda_adm2_zimstat_ocha_20180911.shp")) 
+
+zim_shp <- zim_shp |> 
+    mutate(AREA_SQKM = units::set_units(st_area(zim_shp), km^2)) |> 
+    dplyr::select(ADM0_EN, ADM1_EN, ADM2_EN, AREA_SQKM)
+
+```
+
+Number of polygons (units of analysis)
+
+```{r}
+nrow(zim_shp)
+```
+
+Look at centroid data
+
+```{r}
+glimpse(zim_centroids)
+```
+
+Convert point data into spatial data points
+
+```{r}
+zim_centroids <- zim_centroids |> 
+    rename(x = longitude, y = latitude )
+zim_centroids <- st_as_sf(x = zim_centroids, 
+                          coords = c("x", "y"),
+                          crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+```
+
+Look at number of households per centroid
+
+```{r}
+zim_hh_c <- zim_centroids |> inner_join(zim_hh, by="centroidid") |> 
+    group_by(centroidid) |> 
+    mutate(num_hh_c = n()) |> 
+    dplyr::select(centroidid, num_hh_c) |> 
+    distinct()
+
+summary(zim_hh_c$num_hh_c)
+```
+
+Number of centroids per polygon
+
+```{r}
+zim_shp$num_cent <- lengths(st_intersects(zim_shp, zim_centroids))
+
+summary(zim_shp$num_cent)
+```
+
+Combine data from households with polygon to look at number of households per polygon
+
+```{r}
+zim_shp_hh <- st_intersection(zim_shp, zim_hh_c) # keep data from polygon and points
+glimpse(zim_shp_hh)
+
+zim_shp_hh <- zim_shp_hh |> 
+    group_by(ADM2_EN) |> 
+    mutate(num_centroid_polygon = n(),
+           num_hh_polygon = sum(num_hh_c))
+
+summary(zim_shp_hh$num_hh_polygon)
+```
+
+Area of polygons and number of households per km\^2
+
+```{r}
+summary(zim_shp$AREA_SQKM)
+
+zim_shp_hh <- zim_shp_hh |> 
+    mutate(num_hh_sqkm = num_hh_polygon/AREA_SQKM)
+
+summary(zim_shp_hh$num_hh_sqkm)
+```
+
+Map of centroids per polygon
+
+```{r}
+ggplot(zim_shp) + geom_sf(aes(fill=num_cent)) + scale_fill_viridis_c()
+```
+
+## Zambia
+
+Import the data
+
+```{r}
+#| echo: FALSE
+zam_centroids  <- import(here("data", "raw", "PHIA data", 
+                              "Zambia", "zamphia2016centroids.csv"))
+attr(zam_centroids, 'spec') <- NULL 
+
+zam_shp <- st_read(here("data", "raw", "shapefiles", 
+                        "Zambia","zmb_adm_ecz_20230629_em_shp", 
+                        "zmb_admbnda_adm3_ecz_20230629_em.shp")) |> 
+    dplyr::select(ADM0_EN, ADM1_EN, ADM2_EN, ADM3_EN, AREA_SQKM)
+
+glimpse(zam_shp)
+```
+
+Number of polygons
+
+```{r}
+nrow(zam_shp)
+```
+
+Look at centroid data
+
+```{r}
+zam_centroids <- zam_centroids |> 
+    rename(x = longitude, y = latitude )
+```
+
+Convert point data into spatial data points
+
+```{r}
+zam_centroids <- st_as_sf(x = zam_centroids, 
+                          coords = c("x", "y"),
+                          crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+```
+
+See how many centroids per polygon
+
+```{r}
+zam_shp$num_cent <- lengths(st_intersects(zam_shp, zam_centroids))
+
+summary(zam_shp$num_cent)
+```
+
+Area of polygons
+
+```{r}
+summary(zam_shp$AREA_SQKM)
+```
+
+Number of centroids per polygon
+
+```{r}
+ggplot(zam_shp)  +
+    geom_sf(aes(fill=num_cent)) + scale_fill_viridis_c()
+```
+
+Number of households per centroid
+
+```{r}
+zam_hh <- import(here("data", "raw", "PHIA data", "Zambia", "zamphia2016hh.csv"))
+attr(zam_hh, 'spec') <- NULL 
+
+zam_hh_c <- zam_hh |> 
+    group_by(centroidid) |> 
+    mutate(num_hh = n()) |>
+    dplyr::select(centroidid, num_hh) |> 
+    distinct()
+    
+```
+
+## Malawi
+
+Import the data
+
+```{r}
+mlw_centroids  <- import(here("data", "raw", "PHIA data", "Malawi", "mphia2015centroids.csv")) 
+attr(mlw_centroids, 'spec') <- NULL 
+
+mlw_hh <- import(here("data", "raw", "PHIA data", "Malawi", "mphia2015hh.csv"))
+attr(mlw_hh, 'spec') <- NULL 
+
+mlw_hh_c <- mlw_hh |> 
+    group_by(centroidid) |> 
+    mutate(num_hh = n()) |>
+    dplyr::select(centroidid, num_hh) |> 
+    distinct()
+
+mlw_shp <- st_read(here("data", "raw", "shapefiles", 
+                        "Malawi","mwi_adm_nso_hotosm_20230405_shp", 
+                        "mwi_admbnda_adm2_nso_hotosm_20230405.shp"))
+
+mlw_shp <- mlw_shp |> 
+    mutate(AREA_SQKM = units::set_units(st_area(mlw_shp), km^2)) |>
+    dplyr::select(ADM0_EN, ADM1_EN, ADM2_EN, AREA_SQKM)
+                                
+glimpse(mlw_shp)
+```
+
+Number of polygons
+
+```{r}
+nrow(mlw_shp)
+```
+
+Look at centroid data
+
+```{r}
+mlw_centroids <- mlw_centroids |> 
+    rename(x = longitude, y = latitude )
+```
+
+Convert point data into spatial data points
+
+```{r}
+mlw_centroids <- st_as_sf(x = mlw_centroids, 
+                          coords = c("x", "y"),
+                          crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+```
+
+See how many centroids per polygon
+
+```{r}
+mlw_shp$num_cent <- lengths(st_intersects(mlw_shp, mlw_centroids))
+
+summary(mlw_shp$num_cent)
+```
+
+Area of polygons
+
+```{r}
+summary(mlw_shp$AREA_SQKM)
+```
+
+Number of centroids per polygon
+
+```{r}
+ggplot(mlw_shp) + geom_sf(aes(fill=num_cent)) + scale_fill_viridis_c()
+```
+
+Number of households per centroid
+
+```{r}
+summary(mlw_hh_c$num_hh)
+```
+
+Number of households per polygon
